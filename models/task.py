@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.sql import func
 from database import Base
 from datetime import datetime, timezone
+from sqlalchemy.orm import relationship
+from models.user import User
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -16,7 +18,9 @@ class Task(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     deadline_at = Column(DateTime(timezone=True), nullable=True)  # Новое поле
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
+    owner = relationship("User", back_populates="tasks")
     @property
     def is_urgent(self) -> bool:
         """Рассчитывает срочность на основе дедлайна"""
@@ -46,7 +50,8 @@ class Task(Base):
             "created_at": self.created_at,
             "completed_at": self.completed_at,
             "deadline_at": self.deadline_at,
-            "days_until_deadline": self.days_until_deadline  # Расчётное поле
+            "days_until_deadline": self.days_until_deadline,  # Расчётное поле
+            "user_id": self.user_id
         }
 
     def __repr__(self):
