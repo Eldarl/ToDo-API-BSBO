@@ -5,21 +5,11 @@ from datetime import datetime
 # Базовая схема для Task.
 # Все поля, которые есть в нашей "базе данных" tasks_db
 class TaskBase(BaseModel):
-    title: str = Field(
-        ..., # троеточие означает "обязательное поле"
-        min_length=3,
-        max_length=100,
-        description="Название задачи")
-    description: Optional[str] = Field(
-        None, # None = необязательное поле
-        max_length=500,
-        description="Описание задачи")
-    is_important: bool = Field(
-        ...,
-        description="Важность задачи")
-    is_urgent: bool = Field(
-        ...,
-        description="Срочность задачи")
+    title: str = Field(..., min_length=3, max_length=100, description="Название задачи")
+    description: Optional[str] = Field(None, max_length=500, description="Описание задачи")
+    is_important: bool = Field(..., description="Важность задачи")
+    # is_urgent убираем — теперь расчётное поле
+    deadline_at: Optional[datetime] = Field(None, description="Плановая дата завершения задачи")
 
 # Схема для создания новой задачи
 # Наследует все поля от TaskBase
@@ -29,43 +19,25 @@ class TaskCreate(TaskBase):
 # Схема для обновления задачи (используется в PUT)
 # Все поля опциональные, т.к. мы можем захотеть обновить только title или status
 class TaskUpdate(BaseModel):
-    title: Optional[str] = Field(
-        None,
-        min_length=3,
-        max_length=100,
-        description="Новое название задачи")
-    description: Optional[str] = Field(
-        None,
-        max_length=500,
-        description="Новое описание")
-    is_important: Optional[bool] = Field(
-        None,
-        description="Новая важность")
-    is_urgent: Optional[bool] = Field(
-        None,
-        description="Новая срочность")
-    completed: Optional[bool] = Field(
-        None,
-        description="Статус выполнения")
+    title: Optional[str] = Field(None, min_length=3, max_length=100, description="Новое название задачи")
+    description: Optional[str] = Field(None, max_length=500, description="Новое описание")
+    is_important: Optional[bool] = Field(None, description="Новая важность")
+    deadline_at: Optional[datetime] = Field(None, description="Новый дедлайн")
+    # is_urgent не включаем — он рассчитывается
+    completed: Optional[bool] = Field(None, description="Статус выполнения")
 
 # Модель для ответа (TaskResponse)
 # При ответе сервер возвращает полную информацию о задаче,
 # включая сгенерированные поля: id, quadrant, created_at, etc.
 class TaskResponse(TaskBase):
-    id: int = Field(
-        ...,
-        description="Уникальный идентификатор задачи",
-        examples=[1])
-    quadrant: str = Field(
-        ...,
-        description="Квадрант матрицы Эйзенхауэра (Q1, Q2, Q3, Q4)",
-        examples=["Q1"])
-    completed: bool = Field(
-        default=False,
-        description="Статус выполнения задачи")
-    created_at: datetime = Field(
-        ...,
-        description="Дата и время создания задачи")
+    id: int = Field(..., description="Уникальный идентификатор задачи", examples=[1])
+    quadrant: str = Field(..., description="Квадрант матрицы Эйзенхауэра (Q1, Q2, Q3, Q4)", examples=["Q1"])
+    completed: bool = Field(default=False, description="Статус выполнения задачи")
+    created_at: datetime = Field(..., description="Дата и время создания задачи")
+    completed_at: Optional[datetime] = Field(None, description="Дата и время завершения задачи")
+    deadline_at: Optional[datetime] = Field(None, description="Плановая дата завершения задачи")
+    is_urgent: bool = Field(..., description="Рассчитанная срочность задачи")  # Добавлено
+    days_until_deadline: Optional[int] = Field(None, description="Количество дней до дедлайна (отрицательное — если просрочено)")  # Добавлено
 
-class Config: # Config класс для работы с ORM (понадобится посде подключения СУБД)
-    from_attributes = True
+    class Config:
+        from_attributes = True
